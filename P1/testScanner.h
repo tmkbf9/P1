@@ -1,9 +1,19 @@
-#ifndef P1_TESTSCANNER_H
-#define P1_TESTSCANNER_H
+#ifndef __TEST_SCANNER_H
+#define __TEST_SCANNER_H
 
-#include "token.h"
+#include <iosfwd>
 
-void testScanner(string);
-void prefilter(string);
+class Scanner;
 
-#endif //P1_TESTSCANNER_H
+class TestScanner {
+public:
+ TestScanner(const Scanner & scanner) : scanner(scanner) {}
+
+  void testScan(std::istream & inputSource, std::ostream & errorStream);
+
+private:
+  const Scanner & scanner;
+  int lineNumber;
+};
+
+#endif

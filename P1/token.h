@@ -1,26 +1,26 @@
 #ifndef P1_TOKEN_H
 #define P1_TOKEN_H
 
-
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-//#include <stdlib.h>
-//#include <ctype.h>
-//#include <cstdlib>
-#include <cstdio>
-#include <cctype>
 #include <string>
-#include <iomanip>
-//#include <locale>         // std::locale, std::isalpha
-
-using namespace std;
 
 struct token {
-	string tokenID;
-	string tokenLiteral;
-	int linecount;
+  static token EOF_Token(int linenumber) { return token("EOFTK", "", linenumber); }
+
+  token() {}
+  void print(std::ostream & os);
+
+  bool operator==(const token & other) const { return this->tokenID == other.tokenID; }
+  bool operator!=(const token & other) const { return !(*this == other); }
+  
+  std::string tokenID;
+  std::string tokenLiteral;
+  int linenumber;
+
+private:
+  token(std::string tokenID, std::string tokenLiteral, int linenumber) 
+    : tokenID(tokenID), tokenLiteral(tokenLiteral), linenumber(linenumber) {}
 };
 
+std::ostream & operator<<(std::ostream & os, const token & t);
 
 #endif //P1_TOKEN_H
