@@ -11,5 +11,5 @@ void TestScanner::testScan(istream & inputSource, ostream & errorStream) {
   do {
     token = scanner.scanner();
     cout << token << endl;
-  } while(token != token::EOF_Token(0));
+  } while(token != token::EOF_Token(-1));
 }

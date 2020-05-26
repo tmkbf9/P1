@@ -28,7 +28,33 @@ enum ColumnLabels
 token finalTokenSet[256];
 int tokenPos = 0;   // finalTokenSet placeholder
 
+token Scanner::scanner() const {
+  int state = 0;
+  int charType;
+  
+  do {
+    int currentChar = tokenStream.get();
+    if(currentChar == '\n') {
+      this->linenumber++;
+      continue;
+    }
+			      
+    charType = typeOfChar(currentChar);
+
+    //check fsa table
+    int column = FSATable(state, charType);
+    
+    switch (column) {
+    case 777:
+      return token::EOF_Token(0);
+    }
+  } while(charType != eof);
+
+  return token("Unknown", "Unknown", -1);
+}
+
 // returns case based on FSA table
+/*
 token scanner(char currentChar, char lookaheadChar, int state, int linecount) {
 
   int charType = typeOfChar(currentChar);
@@ -86,8 +112,9 @@ token scanner(char currentChar, char lookaheadChar, int state, int linecount) {
 
   return state;
 }
+*/
 
-int FSATable(int state, int col) {
+int Scanner::FSATable(int state, int col) const {
 
   /*
    * STATES:
@@ -121,7 +148,7 @@ int FSATable(int state, int col) {
 			 {666, 006, 006, 006, 666, 666, 666}
   };
 
-  int tableString = FSA_Table[state][col];
+  int nextState = FSA_Table[state][col];
 
   return nextState;;
 }
@@ -137,7 +164,7 @@ namespace {
 }
 
 // identifies type of char on the FSA Table
-int typeOfChar(char currentChar) {
+int Scanner::typeOfChar(char currentChar) const {
 
   int tableColumn = -1;
 
@@ -156,9 +183,9 @@ int typeOfChar(char currentChar) {
   else if (currentChar == '=') {
     tableColumn = equals;
   }
-  else if (isPartOfSet(currentChar)) {     
-    tableColumn = op;
-  }
+  // else if (isPartOfSet(currentChar)) {     
+  //   tableColumn = op;
+  // }
   else {
     tableColumn = eof;
   }
@@ -166,10 +193,10 @@ int typeOfChar(char currentChar) {
 }
 
 // creates an INTTK for as long as need be
-int makeDigit(char currentChar, char lookaheadChar, int state, int linecount) {
+int makeDigit(char currentChar, char lookaheadChar, int state, int linenumber) {
 
   finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
-  finalTokenSet[tokenPos].linecount = linecount;  //linecount
+  finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
 
   if (isdigit(lookaheadChar)) {
     state = digit;	    // send back to state 2 if digit
@@ -184,24 +211,24 @@ int makeDigit(char currentChar, char lookaheadChar, int state, int linecount) {
 }
 
 // id SYMTK, symbol literal, and line num
-void makeSymbol(char currentChar, int linecount) {
+void makeSymbol(char currentChar, int linenumber) {
   int ii;
   for (ii = 0; ii < sizeof(symbolSet); ii++) {
     if (currentChar == symbolSet[ii]) {
       finalTokenSet[tokenPos].tokenID = "SYMTK";
       finalTokenSet[tokenPos].tokenLiteral = currentChar;
-      finalTokenSet[tokenPos].linecount = linecount;
+      finalTokenSet[tokenPos].linenumber = linenumber;
       tokenPos++;
     }
   }
 }
 
 // makes an IDTK for as long as need be and checks for keyword token
-int makeID(char currentChar, char lookaheadChar, int state, int linecount) {
+int makeID(char currentChar, char lookaheadChar, int state, int linenumber) {
 
   finalTokenSet[tokenPos].tokenLiteral += currentChar;
-  finalTokenSet[tokenPos].linecount = linecount;
-  busy = 1;	  // allows lowercase to pass through
+  finalTokenSet[tokenPos].linenumber = linenumber;
+  //busy = 1;	  // allows lowercase to pass through
 
   if (isalpha(lookaheadChar) || isdigit(lookaheadChar)) {     //continue IDTK with letters or numbers
     state = lower;	    //state 4
@@ -221,7 +248,7 @@ int makeID(char currentChar, char lookaheadChar, int state, int linecount) {
 
     state = 0;	    //state back to 1
     tokenPos++;	    //increment token array
-    busy = 0;	    // no more allowing lowercase letters
+    //    busy = 0;	    // no more allowing lowercase letters
   }
 
   return state;
@@ -234,7 +261,7 @@ void printTokens() {
   for (ii = 0; ii < tokenPos; ii++) {
     cout << setw(8) << finalTokenSet[ii].tokenID << "  ";
     cout << setw(8) << finalTokenSet[ii].tokenLiteral << "  ";
-    cout << setw(8) << "Line: " << finalTokenSet[ii].linecount << endl;
+    cout << setw(8) << "Line: " << finalTokenSet[ii].linenumber << endl;
   }
   cout << "   EOFTK" << endl;
 }

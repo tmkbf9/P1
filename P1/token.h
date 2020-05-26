@@ -7,7 +7,7 @@ struct token {
   static token EOF_Token(int linenumber) { return token("EOFTK", "", linenumber); }
 
   token() {}
-  void print(std::ostream & os);
+  void print(std::ostream & os) const;
 
   bool operator==(const token & other) const { return this->tokenID == other.tokenID; }
   bool operator!=(const token & other) const { return !(*this == other); }
@@ -16,9 +16,10 @@ struct token {
   std::string tokenLiteral;
   int linenumber;
 
-private:
   token(std::string tokenID, std::string tokenLiteral, int linenumber) 
     : tokenID(tokenID), tokenLiteral(tokenLiteral), linenumber(linenumber) {}
+
+private:
 };
 
 std::ostream & operator<<(std::ostream & os, const token & t);
