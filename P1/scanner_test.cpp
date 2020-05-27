@@ -5,6 +5,10 @@
 
 using namespace std;
 
+//
+// If you want to view what happens inside of a test, replace 'os' with 'cerr' in constructor for Scanner
+//
+
 // prefilter tests
 void test_empty_file_produces_eof_token() {
   istringstream is;
@@ -40,7 +44,7 @@ void test_multiple_spaces_produces_eof_token() {
 }
 
 void test_only_newlines_produces_eof_token_with_correct_linenumber() {
-  istringstream is("d");
+  istringstream is("\n\n\n");
   ostringstream os;
   Scanner scanner(is, os);
 
@@ -48,7 +52,7 @@ void test_only_newlines_produces_eof_token_with_correct_linenumber() {
   cout << token << endl;
   
   assert(token.tokenID == "EOFTK");
-  assert(token.linenumber == 1);
+  assert(token.linenumber == 3);
 }
 
 // single character tests

@@ -8,7 +8,8 @@ class Scanner {
  public:
  Scanner(std::istream & tokenStream, std::ostream & errorStream) 
    : tokenStream(tokenStream), errorStream(errorStream), linenumber(0) {}
-  token scanner() const;
+  
+  token scanner();
 
  private:
   Scanner(const Scanner & );
@@ -19,7 +20,7 @@ class Scanner {
 
   std::istream & tokenStream;
   std::ostream & errorStream;
-  mutable int linenumber;
+  int linenumber;
 };
 
 /* int makeDigit(char, char, int, int); */

@@ -28,14 +28,16 @@ enum ColumnLabels
 token finalTokenSet[256];
 int tokenPos = 0;   // finalTokenSet placeholder
 
-token Scanner::scanner() const {
+token Scanner::scanner() {
   int state = 0;
   int charType;
   
   do {
     int currentChar = tokenStream.get();
+    errorStream << linenumber << ": " << currentChar << endl;
+    
     if(currentChar == '\n') {
-      this->linenumber++;
+      linenumber++;
       continue;
     }
 			      
@@ -46,7 +48,7 @@ token Scanner::scanner() const {
     
     switch (column) {
     case 777:
-      return token::EOF_Token(0);
+      return token::EOF_Token(linenumber);
     }
   } while(charType != eof);
 
