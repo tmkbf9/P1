@@ -1,0 +1,5 @@
+main
+scanner_test
+test
+*.o
+*~
