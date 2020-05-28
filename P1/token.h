@@ -5,6 +5,7 @@
 
 struct token {
   static token EOF_Token(int linenumber) { return token("EOFTK", "", linenumber); }
+  static token NUM_Token(char digit, int linenumber) { return token("NUMTK", std::string("").append(1, digit), linenumber); }
 
   token() {}
   void print(std::ostream & os) const;

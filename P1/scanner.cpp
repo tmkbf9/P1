@@ -34,7 +34,8 @@ token Scanner::scanner() {
   
   do {
     int currentChar = tokenStream.get();
-    errorStream << linenumber << ": " << currentChar << endl;
+    int lookaheadChar = tokenStream.peek();
+    errorStream << linenumber << ": " << currentChar << ": " << lookaheadChar << endl;
     
     if(currentChar == '\n') {
       linenumber++;
@@ -44,16 +45,19 @@ token Scanner::scanner() {
     charType = typeOfChar(currentChar);
 
     //check fsa table
-    int column = FSATable(state, charType);
+    int nextState = FSATable(state, charType);
     
-    switch (column) {
+    switch (nextState) {
+    case 2:
+      return token::NUM_Token(currentChar, linenumber);
+      break;
     case 777:
       return token::EOF_Token(linenumber);
     }
   } while(charType != eof);
 
   return token("Unknown", "Unknown", -1);
-}
+ }
 
 // returns case based on FSA table
 /*
@@ -195,19 +199,20 @@ int Scanner::typeOfChar(char currentChar) const {
 }
 
 // creates an INTTK for as long as need be
-int makeDigit(char currentChar, char lookaheadChar, int state, int linenumber) {
+int makeDigit(char currentChar, char lookaheadChar, int linenumber, token & token) {
+  int state = whitespace;
+  
+  // finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
+  // finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
 
-  finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
-  finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
-
-  if (isdigit(lookaheadChar)) {
-    state = digit;	    // send back to state 2 if digit
-  }
-  else {
-    finalTokenSet[tokenPos].tokenID = "INTTK";
-    state = whitespace;	    // send to initial state 1 if not a digit
-    tokenPos++;	    // increment token array
-  }
+  // if (isdigit(lookaheadChar)) {
+  //   state = digit;	    // send back to state 2 if digit
+  // }
+  // else {
+  //   finalTokenSet[tokenPos].tokenID = "INTTK";
+  //   state = whitespace;	    // send to initial state 1 if not a digit
+  //   tokenPos++;	    // increment token array
+  // }
 
   return state;
 }
