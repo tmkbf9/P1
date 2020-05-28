@@ -49,7 +49,12 @@ token Scanner::scanner() {
     
     switch (nextState) {
     case 2:
-      return token::NUM_Token(currentChar, linenumber);
+      buffer.put(currentChar);
+      if(!isdigit(lookaheadChar)) {
+	string bufValue = buffer.str();
+	buffer.flush();
+	return token::NUM_Token(bufValue, linenumber);
+      }
       break;
     case 777:
       return token::EOF_Token(linenumber);
@@ -58,6 +63,24 @@ token Scanner::scanner() {
 
   return token("Unknown", "Unknown", -1);
  }
+
+int makeDigit(char currentChar, char lookaheadChar, int linenumber, token & token) {
+  int state = whitespace;
+  
+  // finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
+  // finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
+
+  // if (isdigit(lookaheadChar)) {
+  //   state = digit;	    // send back to state 2 if digit
+  // }
+  // else {
+  //   finalTokenSet[tokenPos].tokenID = "INTTK";
+  //   state = whitespace;	    // send to initial state 1 if not a digit
+  //   tokenPos++;	    // increment token array
+  // }
+
+  return state;
+}
 
 // returns case based on FSA table
 /*
@@ -198,24 +221,6 @@ int Scanner::typeOfChar(char currentChar) const {
   return tableColumn;
 }
 
-// creates an INTTK for as long as need be
-int makeDigit(char currentChar, char lookaheadChar, int linenumber, token & token) {
-  int state = whitespace;
-  
-  // finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
-  // finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
-
-  // if (isdigit(lookaheadChar)) {
-  //   state = digit;	    // send back to state 2 if digit
-  // }
-  // else {
-  //   finalTokenSet[tokenPos].tokenID = "INTTK";
-  //   state = whitespace;	    // send to initial state 1 if not a digit
-  //   tokenPos++;	    // increment token array
-  // }
-
-  return state;
-}
 
 // id SYMTK, symbol literal, and line num
 void makeSymbol(char currentChar, int linenumber) {
