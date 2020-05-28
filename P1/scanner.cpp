@@ -7,6 +7,23 @@
 
 using namespace std;
 
+namespace {
+  bool isUpperCase(char c) {
+    return isalpha(c) && isupper(c);
+  }
+  
+  bool isLowerCase(char c) {
+    return isalpha(c) && islower(c);
+  }
+
+  string makeErrorString(const string & reason, const string & curValue, int linenumber) {
+    ostringstream err;
+    err << "Error at line " << linenumber << ": " << reason << " <" << curValue << ">";
+
+    return err.str();
+  }
+}
+
 char symbolSet[13] = {'<','>', ':', '+', '-', '*', '/', '.',
 		      ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.
 
@@ -29,7 +46,7 @@ token finalTokenSet[256];
 int tokenPos = 0;   // finalTokenSet placeholder
 
 token Scanner::scanner() {
-  int state = 0;
+  int nextState = 0;
   int charType;
   
   do {
@@ -45,9 +62,18 @@ token Scanner::scanner() {
     charType = typeOfChar(currentChar);
 
     //check fsa table
-    int nextState = FSATable(state, charType);
+    nextState = FSATable(nextState, charType);
     
     switch (nextState) {
+    case 1:
+      buffer.put(currentChar);
+      if(!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+	string bufValue = buffer.str();
+	buffer.flush();
+	return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
+				linenumber);
+      }
+      break;
     case 2:
       buffer.put(currentChar);
       if(!isdigit(lookaheadChar)) {
@@ -56,6 +82,16 @@ token Scanner::scanner() {
 	return token::NUM_Token(bufValue, linenumber);
       }
       break;
+
+    case 6:
+      buffer.put(currentChar);
+      if(!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+	string bufValue = buffer.str();
+	buffer.flush();
+	return token::ID_Token(bufValue, linenumber);
+      }
+      break;
+
     case 777:
       return token::EOF_Token(linenumber);
     }
@@ -63,24 +99,6 @@ token Scanner::scanner() {
 
   return token("Unknown", "Unknown", -1);
  }
-
-int makeDigit(char currentChar, char lookaheadChar, int linenumber, token & token) {
-  int state = whitespace;
-  
-  // finalTokenSet[tokenPos].tokenLiteral += currentChar;	   //append number
-  // finalTokenSet[tokenPos].linenumber = linenumber;  //linenumber
-
-  // if (isdigit(lookaheadChar)) {
-  //   state = digit;	    // send back to state 2 if digit
-  // }
-  // else {
-  //   finalTokenSet[tokenPos].tokenID = "INTTK";
-  //   state = whitespace;	    // send to initial state 1 if not a digit
-  //   tokenPos++;	    // increment token array
-  // }
-
-  return state;
-}
 
 // returns case based on FSA table
 /*
@@ -182,15 +200,6 @@ int Scanner::FSATable(int state, int col) const {
   return nextState;;
 }
 
-namespace {
-  bool isUpperCase(char c) {
-    return isalpha(c) && isupper(c);
-  }
-  
-  bool isLowerCase(char c) {
-    return isalpha(c) && islower(c);
-  }
-}
 
 // identifies type of char on the FSA Table
 int Scanner::typeOfChar(char currentChar) const {
