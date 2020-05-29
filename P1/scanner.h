@@ -26,10 +26,4 @@ class Scanner {
   std::ostringstream buffer;
 };
 
-/* int makeDigit(char, char, int, int); */
-/* void makeSymbol(char, int); */
-/* void printTokens(); */
-/* int makeID(char, char, int, int); */
-/* bool isPartOfSet(char); */
-
 #endif //P1_SCANNER_H
