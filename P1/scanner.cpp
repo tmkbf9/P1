@@ -22,10 +22,17 @@ namespace {
 
     return err.str();
   }
+
+  bool isInSymbolSet(char c, char symbolSet[]) {
+      for (int indexOfSet = 0; indexOfSet < 13; indexOfSet++) {
+          if (c == symbolSet[indexOfSet]) return true;
+      }
+      return false;
+  }
 }
 
-char symbolSet[13] = {'<','>', ':', '+', '-', '*', '/', '.',
-		      ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.
+char symbolSet[13] = { '<','>', ':', '+', '-', '*', '/', '.',
+              ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.
 
 string keywords[12] = { "begin", "end", "repeat", "if", "void", "return", "write",
 			"scan", "program", "let", "then" };
@@ -47,7 +54,8 @@ int tokenPos = 0;   // finalTokenSet placeholder
 
 token Scanner::scanner() {
   int nextState = 0;
-  int charType;
+  int charType = 0;
+  bool isComment = false;
   
   do {
     int currentChar = tokenStream.get();
@@ -58,108 +66,81 @@ token Scanner::scanner() {
       linenumber++;
       continue;
     }
-			      
-    charType = typeOfChar(currentChar);
 
-    //check fsa table
-    nextState = FSATable(nextState, charType);
-    
-    switch (nextState) {
-    case 1:
-      buffer.put(currentChar);
-      if(!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-	string bufValue = buffer.str();
-	buffer.flush();
-	return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
-				linenumber);
-      }
-      break;
-    case 2:
-      buffer.put(currentChar);
-      if(!isdigit(lookaheadChar)) {
-	string bufValue = buffer.str();
-	buffer.flush();
-	return token::NUM_Token(bufValue, linenumber);
-      }
-      break;
-
-    case 6:
-      buffer.put(currentChar);
-      if(!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-	string bufValue = buffer.str();
-	buffer.flush();
-	return token::ID_Token(bufValue, linenumber);
-      }
-      break;
-
-    case 777:
-      return token::EOF_Token(linenumber);
+    if (currentChar == '%' && isComment == true) {
+        isComment = false;
+        continue;
     }
+    else if (isComment == true && currentChar != '%') {
+        continue;
+    }
+    if(currentChar == '%' && isComment == false) {
+        isComment = true;
+        continue;
+    }
+ 
+
+        charType = typeOfChar(currentChar);
+
+        if (charType != -1) {
+            //check fsa table
+            nextState = FSATable(nextState, charType);
+        } else {
+        nextState = -1;
+        }
+
+        buffer.put(currentChar);
+        string bufValue = buffer.str();
+
+        switch (nextState) {
+        case -1:
+            return token::ERR_Token(makeErrorString("Invalid character", bufValue, linenumber), linenumber);
+            break;
+        case 1:
+            if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+                buffer.flush();
+                return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
+                    linenumber);
+            }
+            break;
+        case 2:
+            if (!isdigit(lookaheadChar)) {
+                buffer.flush();
+                return token::NUM_Token(bufValue, linenumber);
+            }
+            break;
+        case 3:
+            if (lookaheadChar != '=') {
+                buffer.flush();
+                return token::SYM_Token(bufValue, linenumber);
+            }
+            break;
+        case 4:
+            buffer.flush();
+            return token::SYM_Token(bufValue, linenumber);
+            break;
+        case 5:
+            buffer.flush();
+            return token::SYM_Token(bufValue, linenumber);
+            break;
+        case 6:
+            if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+                buffer.flush();
+                return token::ID_Token(bufValue, linenumber);
+            }
+            break;
+        case 777:
+            return token::EOF_Token(linenumber);
+            break;
+        case 999:
+            buffer.flush();
+            return token::ERR_Token(makeErrorString("Invalid token of starting with capital letter", bufValue, linenumber), linenumber);
+            break;
+        }
   } while(charType != eof);
 
   return token("Unknown", "Unknown", -1);
  }
-
-// returns case based on FSA table
-/*
-token scanner(char currentChar, char lookaheadChar, int state, int linecount) {
-
-  int charType = typeOfChar(currentChar);
-
-  //check fsa table
-  int column = FSATable(state, charType);
-
-  switch (column) {
-	
-  case 0:
-    break;
-  case 1:
-    break;
-  case 2:
-    state = makeDigit(currentChar, lookaheadChar, state, linecount);
-    break;
-  case 5:
-    makeSymbol(currentChar, linecount);
-    //after symtk, go back to state one
-    state = 0;
-    break;
-  case 7:
-    state = makeID(currentChar, lookaheadChar, state, linecount);
-    break;
-  case 111:
-    cout << "NUMTK" << endl;
-    break;
-  case 222:
-    cout << "ASSTK" << endl;
-    break;
-  case 333:
-    cout << "EQTK" << endl;
-    break;
-  case 444:
-    cout << "SYMTK" << endl;
-    break;
-    // case 555 does not exist!
-  case 666:
-    cout << "IDTK" << endl;
-    break;
-  case 777:
-    return token::EOFToken(linenumber);
-  case 999:
-    fprintf(stderr, "ERROR: Line#: %d \n    [A-Z] is not valid for state 0", linecount);
-    exit(EXIT_FAILURE);
-  case 998:
-    if (busy == 1) // allows lowercase letters if in IDTK
-      break;
-    //needs to tell line number here
-    fprintf(stderr, "ERROR: Line#: %d \n    IDTK can not start with uppercase letter. \n", linecount);
-    exit(EXIT_FAILURE);
-  default: //needed?!?
-    break;
-  }
-
-  return state;
-}
-*/
 
 int Scanner::FSATable(int state, int col) const {
 
@@ -174,9 +155,9 @@ int Scanner::FSATable(int state, int col) const {
    * s6 = 006
    *
    * TOKENS:
-   * NUMTK = 111
-   * ASSTK = 222
-   * EQTK  = 333
+   * NUMTK = 111 
+   * ASSTK = 333 -> converted to SYMTK
+   * EQTK  = 222 -> converted to SYMTK
    * SYMTK = 444
    * IDTK  = 666
    * EOFTK = 777
@@ -186,6 +167,7 @@ int Scanner::FSATable(int state, int col) const {
    */
 
   int FSA_Table[7][7] = {
+            // ws, A-Z, a-z, 0-9, SYM, '=', EOF 
 			 {000, 999, 001, 002, 005, 003, 777},
 			 {998, 006, 006, 006, 998, 998, 998},
 			 {111, 111, 111, 002, 111, 111, 111},
@@ -221,79 +203,12 @@ int Scanner::typeOfChar(char currentChar) const {
   else if (currentChar == '=') {
     tableColumn = equals;
   }
-  // else if (isPartOfSet(currentChar)) {     
-  //   tableColumn = op;
-  // }
-  else {
+  else if (isInSymbolSet(currentChar, symbolSet)) {     
+    tableColumn = op;
+  }
+  else if ((int) currentChar == EOF) {
     tableColumn = eof;
   }
   return tableColumn;
 }
 
-
-// id SYMTK, symbol literal, and line num
-void makeSymbol(char currentChar, int linenumber) {
-  int ii;
-  for (ii = 0; ii < sizeof(symbolSet); ii++) {
-    if (currentChar == symbolSet[ii]) {
-      finalTokenSet[tokenPos].tokenID = "SYMTK";
-      finalTokenSet[tokenPos].tokenLiteral = currentChar;
-      finalTokenSet[tokenPos].linenumber = linenumber;
-      tokenPos++;
-    }
-  }
-}
-
-// makes an IDTK for as long as need be and checks for keyword token
-int makeID(char currentChar, char lookaheadChar, int state, int linenumber) {
-
-  finalTokenSet[tokenPos].tokenLiteral += currentChar;
-  finalTokenSet[tokenPos].linenumber = linenumber;
-  //busy = 1;	  // allows lowercase to pass through
-
-  if (isalpha(lookaheadChar) || isdigit(lookaheadChar)) {     //continue IDTK with letters or numbers
-    state = lower;	    //state 4
-  }
-  else {
-    //check if keyword
-    int ii;
-    for (ii = 0; ii < 12; ii++) {
-      if (finalTokenSet[tokenPos].tokenLiteral == keywords[ii]) {
-	finalTokenSet[tokenPos].tokenID = keywords[ii] + "TK";
-	break;
-      }
-      else {	  // not keyword
-	finalTokenSet[tokenPos].tokenID = "IDTK";
-      }
-    }
-
-    state = 0;	    //state back to 1
-    tokenPos++;	    //increment token array
-    //    busy = 0;	    // no more allowing lowercase letters
-  }
-
-  return state;
-}
-
-// prints final token format: token, literal, line number
-void printTokens() {
-  int ii = 0;
-  cout << endl << endl;
-  for (ii = 0; ii < tokenPos; ii++) {
-    cout << setw(8) << finalTokenSet[ii].tokenID << "  ";
-    cout << setw(8) << finalTokenSet[ii].tokenLiteral << "  ";
-    cout << setw(8) << "Line: " << finalTokenSet[ii].linenumber << endl;
-  }
-  cout << "   EOFTK" << endl;
-}
-
-bool isPartOfSymbolSet(char currentChar) {
-  for (int i = 0; i < sizeof(symbolSet); i++)
-    {
-      if (currentChar == symbolSet[i])
-	{
-	  return true;
-	}
-    }
-  return false;
-}
