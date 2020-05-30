@@ -4,7 +4,7 @@
 using namespace std;
 
 void token::print(ostream & os) const {
-  os << "Token type: " << tokenID << " literal: " << tokenLiteral << " linenumber: " << linenumber << endl;
+  os << "Token type: " << tokenID << " literal: <" << tokenLiteral << "> linenumber: " << linenumber;
 }
 
 ostream & operator<<(ostream & os, const token & t) {

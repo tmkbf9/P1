@@ -2,7 +2,6 @@
 #define P1_SCANNER_H
 
 #include <iosfwd>
-#include <sstream>
 #include "token.h"
 
 class Scanner {
@@ -22,8 +21,6 @@ class Scanner {
   std::istream & tokenStream;
   std::ostream & errorStream;
   int linenumber;
-
-  std::ostringstream buffer;
 };
 
 #endif //P1_SCANNER_H

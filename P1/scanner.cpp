@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <cstdio>
 
@@ -64,6 +65,7 @@ token Scanner::scanner() {
   int nextState = 0;
   int charType = 0;
   bool isComment = false;
+  ostringstream buffer;
   
   do {
     int currentChar = tokenStream.get();
@@ -75,6 +77,10 @@ token Scanner::scanner() {
       continue;
     }
 
+    if(isComment && currentChar == EOF) {
+      return token::ERR_Token("Unterminated comment encountered. Aborting", linenumber);
+    }
+    
     if(currentChar == '%') {
       isComment = !isComment;
       continue;
@@ -92,9 +98,13 @@ token Scanner::scanner() {
     case -1:
       return token::ERR_Token(makeErrorString("Invalid character", bufValue, linenumber), linenumber);
 
+    case 0:
+      buffer.str("");
+      break;
+      
     case 1:
       if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-	buffer.flush();
+	buffer.str("");
 	return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
 				linenumber);
       }
@@ -102,26 +112,26 @@ token Scanner::scanner() {
 
     case 2:
       if (!isdigit(lookaheadChar)) {
-	buffer.flush();
+	buffer.str("");
 	return token::NUM_Token(bufValue, linenumber);
       }
       break;
 
     case 3:
       if (lookaheadChar != '=') {
-	buffer.flush();
+	buffer.str("");
 	return token::SYM_Token(bufValue, linenumber);
       }
       break;
 
     case 4:
     case 5:
-      buffer.flush();
+      buffer.str("");
       return token::SYM_Token(bufValue, linenumber);
 
     case 6:
       if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-	buffer.flush();
+	buffer.str("");
 	
 	token token = createToken(bufValue, linenumber);
 	return token;
@@ -129,10 +139,11 @@ token Scanner::scanner() {
       break;
 
     case 777:
+      buffer.str("");
       return token::EOF_Token(linenumber);
 
     case 999:
-      buffer.flush();
+      buffer.str("");
       return token::ERR_Token(makeErrorString("Invalid token of starting with capital letter", 
 					      bufValue, linenumber),
 			      linenumber);

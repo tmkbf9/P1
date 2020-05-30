@@ -175,6 +175,18 @@ void test_double_equals_produces_ass_token() {
     assert(token.linenumber == 0);
 }
 
+void test_leading_spaces_not_included_in_token() {
+    istringstream is("   ==");
+    ostringstream os;
+    Scanner scanner(is, os);
+
+    token token = scanner.scanner();
+
+    assert(token.tokenID == "SYMTK");
+    assert(token.tokenLiteral == "==");
+    assert(token.linenumber == 0);
+}
+
 // error tests
 void test_single_lcase_char_produces_error() {
   istringstream is("a");
@@ -235,6 +247,7 @@ int main(int argc, char ** argv) {
   test_double_equals_produces_ass_token();
   test_only_comment_produces_eof_token();
   test_invalid_char_produces_error();
+  test_leading_spaces_not_included_in_token();
 
   return 0;
 }
