@@ -43,7 +43,7 @@ namespace {
   }
 
   bool isInSymbolSet(char c) {
-    for(int i = 0; i < sizeof(symbolSet); i++) {
+    for(int i = 0; i < 13; i++) {
       if(c == symbolSet[i]) return true;
     }
     
@@ -51,7 +51,7 @@ namespace {
   }
 
   token createToken(const string & bufValue, int linenumber) {
-    for(int i = 0; i < sizeof(keywords)/sizeof(int); i++) {
+    for(int i = 0; i < 12; i++) {
       if(bufValue == keywords[i]) {
 	return token::KEY_Token(bufValue, linenumber);
       }
