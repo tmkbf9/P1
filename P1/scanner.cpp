@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 #include "scanner.h"
 #include "testScanner.h"
@@ -8,6 +9,23 @@
 using namespace std;
 
 namespace {
+  char symbolSet[13] = { '<','>', ':', '+', '-', '*', '/', '.',
+  	            ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.	
+	
+  string keywords[] = { "begin", "end", "repeat", "if", "void", "return", "write",
+			"scan", "program", "let", "then", "var" };
+
+  enum ColumnLabels
+  	{
+	 whitespace = 0,
+	 upper,
+	 lower,
+	 digit,
+	 op,
+	 equals,
+	 eof
+	};
+		   
   bool isUpperCase(char c) {
     return isalpha(c) && isupper(c);
   }
@@ -24,33 +42,20 @@ namespace {
   }
 
   bool isInSymbolSet(char c, char symbolSet[]) {
-      for (int indexOfSet = 0; indexOfSet < 13; indexOfSet++) {
-          if (c == symbolSet[indexOfSet]) return true;
-      }
-      return false;
+    for (int indexOfSet = 0; indexOfSet < 13; indexOfSet++) {
+      if (c == symbolSet[indexOfSet]) return true;
+    }
+    return false;
+  }
+
+  token createToken(const string & bufValue, int linenumber) {
+    string * match = find(begin(keywords), end(keywords), bufValue);
+    if(match != end(keywords)) 
+      return token::KEY_Token(bufValue, linenumber);
+    else
+      return token::ID_Token(bufValue, linenumber);
   }
 }
-
-char symbolSet[13] = { '<','>', ':', '+', '-', '*', '/', '.',
-              ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.
-
-string keywords[12] = { "begin", "end", "repeat", "if", "void", "return", "write",
-			"scan", "program", "let", "then" };
-
-enum ColumnLabels
-  {
-   whitespace = 0,
-   upper,
-   lower,
-   digit,
-   op,
-   equals,
-   eof
-  };
-		   
-
-token finalTokenSet[256];
-int tokenPos = 0;   // finalTokenSet placeholder
 
 token Scanner::scanner() {
   int nextState = 0;
@@ -67,80 +72,72 @@ token Scanner::scanner() {
       continue;
     }
 
-    if (currentChar == '%' && isComment == true) {
-        isComment = false;
-        continue;
+    if(currentChar == '%') {
+      isComment = !isComment;
+      continue;
     }
-    else if (isComment == true && currentChar != '%') {
-        continue;
+
+    if(isComment == true) { continue; }
+
+    charType = typeOfChar(currentChar);
+    buffer.put(currentChar);
+    string bufValue = buffer.str();
+
+    nextState = (charType != -1) ? FSATable(nextState, charType) : -1;
+
+    switch (nextState) {
+    case -1:
+      return token::ERR_Token(makeErrorString("Invalid character", bufValue, linenumber), linenumber);
+
+    case 1:
+      if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+	buffer.flush();
+	return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
+				linenumber);
+      }
+      break;
+
+    case 2:
+      if (!isdigit(lookaheadChar)) {
+	buffer.flush();
+	return token::NUM_Token(bufValue, linenumber);
+      }
+      break;
+
+    case 3:
+      if (lookaheadChar != '=') {
+	buffer.flush();
+	return token::SYM_Token(bufValue, linenumber);
+      }
+      break;
+
+    case 4:
+    case 5:
+      buffer.flush();
+      return token::SYM_Token(bufValue, linenumber);
+
+    case 6:
+      if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
+	buffer.flush();
+	
+	token token = createToken(bufValue, linenumber);
+	return token;
+      }
+      break;
+
+    case 777:
+      return token::EOF_Token(linenumber);
+
+    case 999:
+      buffer.flush();
+      return token::ERR_Token(makeErrorString("Invalid token of starting with capital letter", 
+					      bufValue, linenumber),
+			      linenumber);
     }
-    if(currentChar == '%' && isComment == false) {
-        isComment = true;
-        continue;
-    }
- 
-
-        charType = typeOfChar(currentChar);
-
-        if (charType != -1) {
-            //check fsa table
-            nextState = FSATable(nextState, charType);
-        } else {
-        nextState = -1;
-        }
-
-        buffer.put(currentChar);
-        string bufValue = buffer.str();
-
-        switch (nextState) {
-        case -1:
-            return token::ERR_Token(makeErrorString("Invalid character", bufValue, linenumber), linenumber);
-            break;
-        case 1:
-            if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-                buffer.flush();
-                return token::ERR_Token(makeErrorString("Invalid token of single character", bufValue, linenumber),
-                    linenumber);
-            }
-            break;
-        case 2:
-            if (!isdigit(lookaheadChar)) {
-                buffer.flush();
-                return token::NUM_Token(bufValue, linenumber);
-            }
-            break;
-        case 3:
-            if (lookaheadChar != '=') {
-                buffer.flush();
-                return token::SYM_Token(bufValue, linenumber);
-            }
-            break;
-        case 4:
-            buffer.flush();
-            return token::SYM_Token(bufValue, linenumber);
-            break;
-        case 5:
-            buffer.flush();
-            return token::SYM_Token(bufValue, linenumber);
-            break;
-        case 6:
-            if (!isLowerCase(lookaheadChar) && !isUpperCase(lookaheadChar) && !isdigit(lookaheadChar)) {
-                buffer.flush();
-                return token::ID_Token(bufValue, linenumber);
-            }
-            break;
-        case 777:
-            return token::EOF_Token(linenumber);
-            break;
-        case 999:
-            buffer.flush();
-            return token::ERR_Token(makeErrorString("Invalid token of starting with capital letter", bufValue, linenumber), linenumber);
-            break;
-        }
   } while(charType != eof);
 
   return token("Unknown", "Unknown", -1);
- }
+}
 
 int Scanner::FSATable(int state, int col) const {
 
@@ -167,7 +164,7 @@ int Scanner::FSATable(int state, int col) const {
    */
 
   int FSA_Table[7][7] = {
-            // ws, A-Z, a-z, 0-9, SYM, '=', EOF 
+			 // ws, A-Z, a-z, 0-9, SYM, '=', EOF 
 			 {000, 999, 001, 002, 005, 003, 777},
 			 {998, 006, 006, 006, 998, 998, 998},
 			 {111, 111, 111, 002, 111, 111, 111},

@@ -140,14 +140,27 @@ void test_two_digits_followed_by_symbol_create_digit_token() {
 }
 
 void test_two_valid_characters_create_id_token() {
-  istringstream is("aa");
+  istringstream is("vars");
   ostringstream os;
   Scanner scanner(is, os);
 
   token token = scanner.scanner();
   
   assert(token.tokenID == "IDTK");
-  assert(token.tokenLiteral == "aa");
+  assert(token.tokenLiteral == "vars");
+  assert(token.linenumber == 0);
+}
+
+void test_detects_keyword_token_from_id_token() {
+  istringstream is("var");
+  ostringstream os;
+  Scanner scanner(is, os);
+
+  token token = scanner.scanner();
+  cout << "token: " << token << endl;
+  
+  assert(token.tokenID == "KEYTK");
+  assert(token.tokenLiteral == "var");
   assert(token.linenumber == 0);
 }
 
@@ -215,6 +228,7 @@ int main(int argc, char ** argv) {
   test_two_digits_create_digit_token();
   test_two_digits_followed_by_symbol_create_digit_token();
   test_single_lcase_char_produces_error();
+  test_detects_keyword_token_from_id_token();
   test_two_valid_characters_create_id_token();
   test_single_ucase_char_produces_error();
   test_single_symbol_produces_symbol_token();
