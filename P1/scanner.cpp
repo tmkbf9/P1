@@ -41,11 +41,9 @@ namespace {
     return err.str();
   }
 
-  bool isInSymbolSet(char c, char symbolSet[]) {
-    for (int indexOfSet = 0; indexOfSet < 13; indexOfSet++) {
-      if (c == symbolSet[indexOfSet]) return true;
-    }
-    return false;
+  bool isInSymbolSet(char c) {
+    char * match = find(begin(symbolSet), end(symbolSet), c);
+    return match != end(symbolSet);
   }
 
   token createToken(const string & bufValue, int linenumber) {
@@ -200,7 +198,7 @@ int Scanner::typeOfChar(char currentChar) const {
   else if (currentChar == '=') {
     tableColumn = equals;
   }
-  else if (isInSymbolSet(currentChar, symbolSet)) {     
+  else if (isInSymbolSet(currentChar)) {     
     tableColumn = op;
   }
   else if ((int) currentChar == EOF) {
