@@ -157,7 +157,6 @@ void test_detects_keyword_token_from_id_token() {
   Scanner scanner(is, os);
 
   token token = scanner.scanner();
-  cout << "token: " << token << endl;
   
   assert(token.tokenID == "KEYTK");
   assert(token.tokenLiteral == "var");

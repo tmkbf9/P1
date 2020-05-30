@@ -1,6 +1,6 @@
 #include <iostream>
 #include <iomanip>
-#include <algorithm>
+#include <cstdio>
 
 #include "scanner.h"
 #include "testScanner.h"
@@ -9,7 +9,7 @@
 using namespace std;
 
 namespace {
-  char symbolSet[13] = { '<','>', ':', '+', '-', '*', '/', '.',
+  char symbolSet[] = { '<','>', ':', '+', '-', '*', '/', '.',
   	            ',', '[', ']', '#', '&' }; //'=' and '==' are not treated as symbols. They are treated seperately.	
 	
   string keywords[] = { "begin", "end", "repeat", "if", "void", "return", "write",
@@ -42,16 +42,21 @@ namespace {
   }
 
   bool isInSymbolSet(char c) {
-    char * match = find(begin(symbolSet), end(symbolSet), c);
-    return match != end(symbolSet);
+    for(int i = 0; i < sizeof(symbolSet); i++) {
+      if(c == symbolSet[i]) return true;
+    }
+    
+    return false;
   }
 
   token createToken(const string & bufValue, int linenumber) {
-    string * match = find(begin(keywords), end(keywords), bufValue);
-    if(match != end(keywords)) 
-      return token::KEY_Token(bufValue, linenumber);
-    else
-      return token::ID_Token(bufValue, linenumber);
+    for(int i = 0; i < sizeof(keywords)/sizeof(int); i++) {
+      if(bufValue == keywords[i]) {
+	return token::KEY_Token(bufValue, linenumber);
+      }
+    }
+
+    return token::ID_Token(bufValue, linenumber);
   }
 }
 

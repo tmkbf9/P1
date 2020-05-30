@@ -7,12 +7,11 @@ class Scanner;
 
 class TestScanner {
 public:
- TestScanner(const Scanner & scanner) : scanner(scanner) {}
+  TestScanner() : lineNumber(0) {}
 
   void testScan(std::istream & inputSource, std::ostream & errorStream);
 
 private:
-  const Scanner & scanner;
   int lineNumber;
 };
 

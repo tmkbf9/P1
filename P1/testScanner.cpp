@@ -8,11 +8,10 @@ using namespace std;
 
 void TestScanner::testScan(istream & inputSource, ostream & errorStream) {
   token token;
-  istringstream is;
-  ostringstream os;
-  Scanner scanner(is, os);
+
+  Scanner scanner(inputSource, errorStream);
   do {
     token = scanner.scanner();
     cout << token << endl;
-  } while(token != token::EOF_Token(-1));
+  } while(token.tokenID != "EOFTK" && token.tokenID != "ERRTK");
 }
